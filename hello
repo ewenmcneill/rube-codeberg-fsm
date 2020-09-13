@@ -1,0 +1,199 @@
+#! /usr/bin/env python3
+# Rube Codeberg FSM, written by Ewen McNeill <ewen@naos.co.nz>, 2020-09-12
+#---------------------------------------------------------------------------
+"""
+<html>
+  <head><title>Programming in the 1980s vs the 2020s</title></head>
+  <body>
+    <h1>Programming in the 1980s vs the 2020s</h1>
+    <p>In the early 1980s programmers might find themselves staring at
+       <a href="https://en.wikipedia.org/wiki/Assembly_language">assembly
+       language</a> listings like this, trying to make them work:
+    </p><pre>
+0100:           .ORG    0x100
+0100: 212501            LD HL,text
+0103: 113401            LD DE,key
+0106: 7E        decode: LD A,(HL)
+0107: B7                OR A
+0108: 2808              JR Z,print
+010A: 47                LD B,A
+010B: 1A                LD A,(DE)
+010C: A8                XOR B
+010D: 77                LD (HL),A
+010E: 13                INC DE
+010F: 23                INC HL
+0110: 18F4              JR decode
+0112: 212501    print:  LD HL,text 
+0115: 7E        pc:     LD A,(HL)
+0116: B7                OR A
+0117: 280B              JR Z, done
+0119: 5F                LD E,A
+011A: 0E02              LD C,2
+011C: E5                PUSH HL
+011D: CD0500            CALL 5
+0120: E1                POP HL
+0121: 23                INC HL
+0122: 18F1              JR pc
+0124: C7        done:   RST 0
+                
+0125: 181C2F03  text:   DB 0x18, 0x1c, 0x2f, 0x03, 0x01, 0x4c, 0x3e
+0129: 014C3E    
+012C: 01174C56          DB 0x01, 0x17, 0x4c, 0x56, 0x11, 0x3f, 0x3a
+0130: 113F3A    
+0133: 00                DB 00
+0134: 5079436F  key:    DB 0x50, 0x79, 0x43, 0x6f, 0x6e, 0x6c, 0x69
+0138: 6E6C69    
+013B: 6E652032          DB 0x6e, 0x65, 0x20, 0x32, 0x30, 0x32, 0x30 
+013F: 303230    
+0142: 00                DB 00
+    </pre>
+    <p>Fortuantely now we have Python and can output simple strings in
+       (just!) less than 200 lines of Python :-)
+    </p>
+  </body>
+</html>
+"""
+import argparse
+import sys
+from bs4 import BeautifulSoup
+from itertools import chain
+
+def switch(cls):
+    inst = cls()
+    attributes = (getattr(inst, attr) for attr in dir(inst))
+    cases = [method for method in attributes
+                     if hasattr(method, "__predicate__")]
+    cases.sort(key = lambda i: i.__case_order__)
+    for case in cases:
+        if case.__predicate__():
+            return case()
+
+    raise ValueError(f"No case matches value -- do you have a default case?")
+
+def case(matcher):
+    if not hasattr(case, '__total_order__'):
+        case.__total_order__ = 0
+    def __decorator__(f):
+        f.__predicate__  = matcher
+        f.__case_order__ = case.__total_order__
+        case.__total_order__ += 1
+        return f
+
+    return __decorator__
+
+def get_html(): return __doc__.strip()
+
+def get_pre():  return (BeautifulSoup(get_html(), 
+                        'html.parser').find_all('pre'))[0].get_text().strip()
+def get_asm():
+    return "\n".join((line[16:] for line in get_pre().split('\n')))
+
+def get_bin():
+    return bytes.fromhex("".join((line[6:14].strip() 
+                                      for line in get_pre().split('\n'))))
+def write_bin(destination):
+    with open(destination, "wb") as binary:
+        binary.write(get_bin())
+
+def inc(regs, h, l):
+    addr = regs[h] * 256 + regs[l]; addr += 1; regs[h] = int(addr / 256)
+    regs[l] = addr % 256
+
+def imm16_to_reg(memory, regs, h, l):
+    regs[l] = memory[regs['pc']]; regs[h] = memory[regs['pc']+1]
+    regs['pc'] += 2
+
+def hello(bin, start):
+    memory = bytearray(chain((0x00 for _ in range(start)), bin))
+    regs   = {'a': 0, 'b': 0, 'c': 0, 'd': 0, 'e': 0, 'f': 0, 'h': 0, 'l': 0}
+    regs['pc'] = start
+
+    while (True):
+        ins = memory[regs['pc']]
+        regs['pc'] += 1
+        @switch
+        class ClockTick:
+            @case(lambda: ins == 0x0e)               # LD C, value
+            def h0e(_):
+                regs['c'] = memory[regs['pc']]
+                regs['pc'] += 1
+ 
+            @case(lambda: ins == 0x11)               # LD DE, value
+            def h11(_): imm16_to_reg(memory, regs, 'd', 'e')
+ 
+            @case(lambda: ins == 0x13)               # INC DE
+            def h13(_): inc(regs, 'd', 'e')
+ 
+            @case(lambda: ins == 0x1a)               # LD A, (DE)
+            def h1a(_): regs['a'] = memory[regs['d'] * 256 + regs['e']]
+ 
+            @case(lambda: ins == 0x18)               # JR dest
+            def h18(_):
+                offset = memory[regs['pc']]
+                regs['pc'] += 1
+                regs['pc'] += offset if offset < 128 else (offset-256)
+ 
+            @case(lambda: ins == 0x21)               # LD HL, value
+            def h21(_): imm16_to_reg(memory, regs, 'h', 'l')
+ 
+            @case(lambda: ins == 0x23)               # INC HL
+            def h23(_): inc(regs, 'h', 'l')
+ 
+            @case(lambda: ins == 0x28)               # JR Z, dest
+            def h28(_):
+                offset = memory[regs['pc']]
+                regs['pc'] += 1
+                if regs['f']:
+                    regs['pc'] += offset if offset < 128 else (offset-256)
+ 
+            @case(lambda: ins == 0x47)               # LD B, A
+            def h47(_): regs['b'] = regs['a']
+ 
+            @case(lambda: ins == 0x5f)               # LD E, A
+            def h5f(_): regs['e'] = regs['a']
+ 
+            @case(lambda: ins == 0x77)               # LD (HL), A
+            def h77(_): memory[regs['h'] * 256 + regs['l']] = regs['a']
+ 
+            @case(lambda: ins == 0x7e)               # LD A, (HL)
+            def h7e(_): regs['a'] = memory[regs['h'] * 256 + regs['l']]
+ 
+            @case(lambda: ins == 0xa8)               # XOR B
+            def ha8(_): regs['a'] = regs['a'] ^ regs['b']
+ 
+            @case(lambda: ins == 0xb7)               # OR A
+            def hb7(_): regs['f'] = 1 if (regs['a'] == 0) else 0
+ 
+            @case(lambda: ins == 0xc7)               # RST 0
+            def hc7(_): sys.exit()
+ 
+            @case(lambda: ins == 0xcd)               # CALL, addr
+            def hcd(_):
+                addr = memory[regs['pc'] + 1] * 256 + memory[regs['pc']]
+                regs['pc'] += 2
+                if (addr == 0x0005 and regs['c'] == 0x02):
+                    sys.stdout.write(chr(regs['e']))
+ 
+            @case(lambda: (ins == 0xe1) or (ins == 0xe5)) # POP HL / PUSH HL
+            def he1_or_he5(_): pass
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--asm",  help="Output assembly", action="store_true")
+    parser.add_argument("--bin",  help="Output binary to file")
+    parser.add_argument("--html", help="Output HTML",     action="store_true")
+    cmdline = parser.parse_args()
+
+    @switch
+    class Action:
+        @case(lambda: cmdline.asm)
+        def aasm(_): print(get_asm())
+
+        @case(lambda: cmdline.bin)
+        def bin(_): write_bin(cmdline.bin)
+
+        @case(lambda: cmdline.html)
+        def html(_): print(get_html())
+
+        @case(lambda: True)
+        def default(_): hello(get_bin(), 0x100)
