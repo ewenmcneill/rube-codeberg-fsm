@@ -156,3 +156,55 @@ The FSM implementation is incomplete: it only implements the subset that
 is needed for the original program to operate, and certain liberties are
 taken with instruction implementation where the details do not matter to
 the original program.
+
+## Other Rube Codeberg submissons
+
+Unfortunately there does not seem to be a definitive list of PyConlineAU
+2020 "Rube Codeberg" entries, but here a few that I found separately:
+
+*   A Brandshaw created a
+    [randomised answer generator with mysterious numbers](https://github.com/abrad3/bogo-hello)
+
+*   Adam Baxter created a
+    [web, source repository, and date/time based entry](https://github.com/voltagex/pycon2020-codeberg)
+
+*   Bardi Harborow created a
+    [web browser based entry, that actually printed on paper](https://github.com/bardiharborow/pycon2020-rudecodeberg) (assuming you have a printer, and paper!)
+
+*   Bosco Ho created an
+    [entry which relies on division by zero to trigger printing a result
+    scraped from the rules](https://github.com/boscoh/pyconau2020-rube)
+
+*   Brad created a
+    [Python decorator based entry](https://blog.bjdean.id.au/2020/09/pyconline-au-2020-rube-codeberg-competition/)
+
+*   Craig Quirke create an
+    [entry which scrapes the rules and Wikipedia for the answer](https://github.com/wolfric83/pyconlineAU2020-RubeCodeberg)
+
+*   Darren Wurf created an [animated SVG based entry](https://gist.github.com/dwurf/95cdfdf5cd4d1890c8526cea2423cfeb)
+
+*   James Constable created a
+    [maze based entry](https://github.com/jamesconstable/rube-codeberg)
+
+*   Julian O created a [Beautiful Soup version specific entry](https://github.com/Julian-O/pyconau_rubcodeberg)
+
+*   Luis Van Slageren created a
+    [playable XML based entry](https://github.com/luisvsm/PyCon-AU-2020)
+
+*   Rachel Bunder crated an
+    [entry which scrapes the rules and words on the Internet](https://github.com/RachelBunder/rube_codeberg)
+
+*   Tim Bell created an
+    [entry that downloaded the required characters from the Internet](https://github.com/timb07/pyconline2020-rube-codeberg)
+
+*   Trevor Peacock created an
+    [entry that uses dangling XML children to encode the answer](https://github.com/trevorpeacock/PyconAU2020RubeCodeberg)
+
+*   Yaakov H created a
+    [hacker movie inspired entry](https://github.com/yaakov-h/pyconlineau2020-rube-codeberg)
+
+---------------------------------------------------------------------------
+
+Since many of these examples *require* the rules, there is an
+[archive of the PyConlineAU 2020 Sunday Schedule](https://web.archive.org/web/20200914071151/https://2020.pycon.org.au/program/sun/)
+which contains the rules for posterity.
