@@ -178,6 +178,11 @@ Unfortunately there does not seem to be a definitive list of PyConlineAU
 *   Brad created a
     [Python decorator based entry](https://blog.bjdean.id.au/2020/09/pyconline-au-2020-rube-codeberg-competition/)
 
+*   cintiadr created
+    [very object oriented entry](https://github.com/cintiadr/pycon-helloworld)
+    which
+    [won "most object oriented hello world"](https://cintia.me/blog/post/pyconline2020/); it even has a `char_factory()` :-)
+
 *   Craig Quirke create an
     [entry which scrapes the rules and Wikipedia for the answer](https://github.com/wolfric83/pyconlineAU2020-RubeCodeberg)
 
